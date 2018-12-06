@@ -19,7 +19,19 @@ HEADERS = {
     'user-agent': "Mozilla/5.0 (iPhone; CPU iPhone OS 11_0 like Mac OS X) AppleWebKit/604.1.38 (KHTML, like Gecko) Version/11.0 Mobile/15A372 Safari/604.1",
 }
 
-SLEEP = 1
+USAGE = '''
+
+    Usage:
+
+        python tiktok-crawler.py http://v.douyin.com/8YVQBV/ all
+
+        python tiktok-crawler.py http://v.douyin.com/82UayF/ latest
+
+'''
+
+FETCH_LATEST = 'latest'
+FETCH_ALL = 'all'
+SLEEP_TIME = 1
 
 def get_real_address(url):
     if url.find('v.douyin.com') < 0: return url
@@ -35,8 +47,9 @@ def get_dytk(url):
 
 class TikTokCrawler(object):
 
-    def __init__(self, url):
+    def __init__(self, url, type):
         self.url = get_real_address(url)
+        self.type = type
 
     @staticmethod
     def generateSignature(value):
@@ -51,9 +64,11 @@ class TikTokCrawler(object):
         return hmd5.hexdigest()
 
     def _fetch_user_media(self, user_id, dytk, url):
+
         if not user_id:
             print("Number %s does not exist" % user_id)
             return { 'count': 0, 'list': [] }
+
         hostname = urllib.parse.urlparse(url).hostname
         signature = self.generateSignature(str(user_id))
         user_video_url = "https://%s/aweme/v1/aweme/post/" % hostname
@@ -65,18 +80,25 @@ class TikTokCrawler(object):
             '_signature': signature,
             'dytk': dytk
         }
+
         max_cursor, videos, page = None, { 'count': 0, 'list': [] }, 1
+
         while True:
+
             if max_cursor:
                 user_video_params['max_cursor'] = str(max_cursor)
+
             print("Fetching user videos page %s" % page)
+
             res = requests.get(user_video_url, headers=HEADERS, params=user_video_params)
             try:
                 contentJson = json.loads(res.content.decode('utf-8'))
             except:
                 print("Fetch exception, try again!")
                 continue
+
             aweme_list = contentJson.get('aweme_list', [])
+
             for aweme in aweme_list:
                 share_info = aweme.get('share_info', {})
                 statistics = aweme.get('statistics', {})
@@ -98,12 +120,18 @@ class TikTokCrawler(object):
                     'share': statistics.get('forward_count', 0),
                 })
                 videos['count'] += 1
+
             if contentJson.get('has_more'):
                 max_cursor = contentJson.get('max_cursor')
             else:
                 break
+
             page += 1
-            time.sleep(SLEEP)
+
+            time.sleep(SLEEP_TIME)
+
+            if self.type == FETCH_LATEST:
+                break
 
         if videos['count'] == 0:
             print("There's no video in number %s." % user_id)
@@ -118,9 +146,10 @@ class TikTokCrawler(object):
         user_id = number[0]
         videos = self._fetch_user_media(user_id, dytk, self.url)
         sys.stdout.write(str(videos).replace("'", '"'))
-        print("\n\nTik Tok user %s, video number %d\n\n" % (user_id, videos['count']))
+        print("\n\nTik Tok user %s, video count %d\n\n" % (user_id, videos['count']))
 
     def _fetch_challenge_media(self, challenge_id, url):
+
         if not challenge_id:
             print("Challenge #%s does not exist" % challenge_id)
             return { 'count': 0, 'list': [] }
@@ -137,19 +166,26 @@ class TikTokCrawler(object):
             'download_click_limit': '0',
             '_signature': signature
         }
+
         cursor, videos, page = None, { 'count': 0, 'list': [] }, 1
+
         while True:
+
             if cursor:
                 challenge_video_params['cursor'] = str(cursor)
                 challenge_video_params['_signature'] = self.generateSignature(str(challenge_id) + '9' + str(cursor))
+
             print("Fetching challenge videos page %s" % page)
+
             res = requests.get(challenge_video_url, headers=HEADERS,params=challenge_video_params)
             try:
                 contentJson = json.loads(res.content.decode('utf-8'))
             except:
                 print("Fetch exception, try again!")
                 continue
+
             aweme_list = contentJson.get('aweme_list', [])
+
             if not aweme_list:
                 break
             for aweme in aweme_list:
@@ -175,8 +211,13 @@ class TikTokCrawler(object):
                 cursor = contentJson.get('cursor')
             else:
                 break
+
             page += 1
-            time.sleep(SLEEP)
+
+            time.sleep(SLEEP_TIME)
+
+            if self.type == FETCH_LATEST:
+                break
 
         if videos['count'] == 0:
             print("There's no video in challenge %s." % challenge_id)
@@ -189,7 +230,7 @@ class TikTokCrawler(object):
         challenges_id = challenge[0]
         videos = self._fetch_challenge_media(challenges_id, self.url)
         sys.stdout.write(str(videos).replace("'", '"'))
-        print("\n\nTik Tok challenge #%s, video number %d\n\n" % (challenges_id, videos['count']))
+        print("\n\nTik Tok challenge #%s, video count %d\n\n" % (challenges_id, videos['count']))
 
     def fetch(self):
         if re.search('share/user', self.url):
@@ -200,18 +241,22 @@ class TikTokCrawler(object):
             usage()
 
 def usage():
-    print('''
-          Usage:
-
-          python tiktok-crawler.py http://v.douyin.com/8YVQBV/
-          ''')
+    print(USAGE)
 
 if __name__ == "__main__":
 
-    if len(sys.argv) < 2:
+    if len(sys.argv) != 3:
         usage()
         sys.exit(1)
 
     fetch_url = sys.argv[1]
-    crawler = TikTokCrawler(fetch_url)
+
+    fetch_type = sys.argv[2]
+
+    if fetch_type != FETCH_LATEST and fetch_type != FETCH_ALL:
+        usage()
+        sys.exit(1)
+
+    crawler = TikTokCrawler(fetch_url, fetch_type)
+
     crawler.fetch()
