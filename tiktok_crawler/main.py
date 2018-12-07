@@ -3,7 +3,7 @@
 import os
 import sys, getopt
 
-import urllib.parse
+import urllib
 import hashlib
 import requests
 import re
@@ -23,9 +23,9 @@ USAGE = '''
 
     Usage:
 
-        python tiktok-crawler.py http://v.douyin.com/8YVQBV/ all
+        tiktok-crawler http://v.douyin.com/8YVQBV/ all
 
-        python tiktok-crawler.py http://v.douyin.com/82UayF/ latest
+        tiktok-crawler http://v.douyin.com/82UayF/ latest
 
 '''
 
@@ -244,8 +244,7 @@ class TikTokCrawler(object):
 def usage():
     print(USAGE)
 
-if __name__ == "__main__":
-
+def run():
     if len(sys.argv) != 3:
         usage()
         sys.exit(1)
@@ -261,3 +260,7 @@ if __name__ == "__main__":
     crawler = TikTokCrawler(fetch_url, fetch_type)
 
     crawler.fetch()
+
+if __name__ == "__main__":
+
+    run()
