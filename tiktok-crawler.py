@@ -126,7 +126,8 @@ class TikTokCrawler(object):
             else:
                 break
 
-            page += 1
+            if len(aweme_list) > 0:
+                page += 1
 
             time.sleep(SLEEP_TIME)
 
