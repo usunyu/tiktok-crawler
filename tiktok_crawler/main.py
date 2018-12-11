@@ -23,9 +23,9 @@ USAGE = '''
 
     Usage:
 
-        tiktok-crawler http://v.douyin.com/8YVQBV/ all
+        tiktok-crawler http://v.douyin.com/8YVQBV/ all 200
 
-        tiktok-crawler http://v.douyin.com/82UayF/ latest
+        tiktok-crawler http://v.douyin.com/82UayF/ latest 20
 
 '''
 
@@ -47,9 +47,10 @@ def get_dytk(url):
 
 class TikTokCrawler(object):
 
-    def __init__(self, url, type):
+    def __init__(self, url, type, max):
         self.url = get_real_address(url)
         self.type = type
+        self.max = max
 
     @staticmethod
     def generateSignature(value):
@@ -131,6 +132,9 @@ class TikTokCrawler(object):
             if self.type == FETCH_LATEST and len(aweme_list) > 0:
                 break
 
+            if videos['count'] >= self.max:
+                break
+
         return videos
 
     def fetch_user_videos(self):
@@ -210,6 +214,9 @@ class TikTokCrawler(object):
             if self.type == FETCH_LATEST:
                 break
 
+            if videos['count'] >= self.max:
+                break
+
         return videos
 
     def fetch_challenge_videos(self):
@@ -231,19 +238,22 @@ def usage():
     print(USAGE)
 
 def run():
-    if len(sys.argv) != 3:
+    if len(sys.argv) != 4:
         usage()
         sys.exit(1)
 
     fetch_url = sys.argv[1]
-
     fetch_type = sys.argv[2]
-
     if fetch_type != FETCH_LATEST and fetch_type != FETCH_ALL:
         usage()
         sys.exit(1)
+    try:
+        fetch_max = int(sys.argv[3])
+    except:
+        usage()
+        sys.exit(1)
 
-    crawler = TikTokCrawler(fetch_url, fetch_type)
+    crawler = TikTokCrawler(fetch_url, fetch_type, fetch_max)
 
     crawler.fetch()
 
