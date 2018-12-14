@@ -10,7 +10,7 @@ $ sudo python setup.py install
 
 ### Run
 ```
-$ tiktok-crawler http://v.douyin.com/8YVQBV/ all
+$ tiktok-crawler http://v.douyin.com/8YVQBV/ all 200
 
-$ tiktok-crawler http://v.douyin.com/82UayF/ latest
+$ tiktok-crawler http://v.douyin.com/82UayF/ latest 20
 ```
